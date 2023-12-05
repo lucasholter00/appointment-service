@@ -1,6 +1,7 @@
 package mqtt
 
 import (
+	"Group20/appointment-service/controllers"
 	"fmt"
 	"log"
 	"net/url"
@@ -33,8 +34,8 @@ func getOptions() *mqtt.ClientOptions {
 	var opts = mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("tcp://%s", url))
 	opts.SetClientID("go_mqh2eu1h2ieh12iuett_client")
-	opts.SetUsername("emqx")
-	opts.SetPassword("public")
+	opts.SetUsername("")
+	opts.SetPassword("")
 	opts.SetDefaultPublishHandler(messagePubHandler)
 	opts.OnConnect = connectHandler
 	opts.OnConnectionLost = connectLostHandler
@@ -47,8 +48,8 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 	fmt.Println("MQTT client is connected")
-	//controllers.InitialiseDentist(client)}
-
+	controllers.InitialiseAppointment(client)
+	controllers.InitializeAvailableTimes(client)
 }
 
 var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
