@@ -157,6 +157,11 @@ func CreateAppointment(payload schemas.Appointment, client mqtt.Client) bool {
 	var code string
 	var returnVal bool
 
+	if exist(payload) {
+		//send conflict - http status code
+		return false
+	}
+
 	col := getAppointmentCollection()
 
 	result, err := col.InsertOne(context.TODO(), payload)
@@ -188,6 +193,12 @@ func CancelAppointment(id primitive.ObjectID, client mqtt.Client) bool {
 	col := getAppointmentCollection()
 	filter := bson.M{"_id": id}
 	data := col.FindOne(context.TODO(), filter)
+
+	if data.Err() == mongo.ErrNoDocuments {
+		//send 404 message
+		return false
+	}
+
 	result, err := col.DeleteOne(context.TODO(), filter)
 
 	if err != nil {
