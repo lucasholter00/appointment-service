@@ -17,7 +17,6 @@ import (
 func InitializeAvailableTimes(client mqtt.Client) {
 
 	tokenCreate := client.Subscribe("grp20/dentist/post", byte(0), func(c mqtt.Client, m mqtt.Message) {
-
 		var payload schemas.AvailableTime
 
 		err := json.Unmarshal(m.Payload(), &payload)
@@ -57,7 +56,12 @@ func InitializeAvailableTimes(client mqtt.Client) {
 			message := "{\"Message\": \"Bad request\",\"Code\": \"400\"}"
 			client.Publish("grp20/res/dentist/delete", 0, false, message)
 		} else {
-			go DeleteAvailableTime(payload.ID, client)
+			if !exist(payload) {
+				message := "{\"Message\": \"Not found!\",\"Code\": \"404\"}"
+				client.Publish("grp20/res/dentist/delete", 0, false, message)
+			} else {
+				go DeleteAvailableTime(payload.ID, client)
+			}
 		}
 	})
 
@@ -85,13 +89,15 @@ func InitializeAvailableTimes(client mqtt.Client) {
 func CreateAvailableTime(payload schemas.AvailableTime, client mqtt.Client, internal bool) bool {
 	var message string
 
-	if payload.Start_time > payload.End_time {
-		message = "{\"Message\": \"End time must be after the start time\",\"Code\": \"409\"}"
+	if exist(payload) {
+		var message string
+		message = "{\"Message\": \"An identical available time already exist!\",\"Code\": \"409\"}"
 		client.Publish("grp20/res/availabletime/create", 0, false, message)
 		return false
 	}
-	if exist(payload) {
-		message = "{\"Message\": \"An identical available time already exist!\",\"Code\": \"409\"}"
+
+	if payload.Start_time > payload.End_time {
+		message = "{\"Message\": \"End time must be after the start time\",\"Code\": \"409\"}"
 		client.Publish("grp20/res/availabletime/create", 0, false, message)
 		return false
 	}
