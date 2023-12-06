@@ -85,8 +85,13 @@ func InitializeAvailableTimes(client mqtt.Client) {
 func CreateAvailableTime(payload schemas.AvailableTime, client mqtt.Client, internal bool) bool {
 	var message string
 
-	if payload.Start_time < payload.End_time {
+	if payload.Start_time > payload.End_time {
 		message = "{\"Message\": \"End time must be after the start time\",\"Code\": \"409\"}"
+		client.Publish("grp20/res/availabletime/create", 0, false, message)
+		return false
+	}
+	if exist(payload) {
+		message = "{\"Message\": \"An identical available time already exist!\",\"Code\": \"409\"}"
 		client.Publish("grp20/res/availabletime/create", 0, false, message)
 		return false
 	}
@@ -184,10 +189,15 @@ func DeleteAvailableTime(ID primitive.ObjectID, client mqtt.Client) bool {
 
 	if result.DeletedCount == 0 {
 		document, err := json.Marshal(msg)
-		client.Publish("appointmentservice/internal/delete", 0, false, document)
+
 		if err != nil {
+			message := "{\"Message\": \"Internal server error!\",\"Code\": \"500\"}"
+			client.Publish("grp20/res/dentist/delete", 0, false, message)
 			return false
 		}
+
+		client.Publish("appointmentservice/internal/delete", 0, false, document)
+
 		return false
 	} else {
 		fmt.Printf("Deleted Time id: %v \n", ID)
@@ -197,6 +207,23 @@ func DeleteAvailableTime(ID primitive.ObjectID, client mqtt.Client) bool {
 		return true
 
 	}
+}
+
+func exist(payload schemas.AvailableTime) bool {
+	col := getAvailableTimesCollection()
+
+	filter := bson.M{
+		"Dentist_id": payload.Dentist_id,
+		"Start_time": payload.Start_time,
+		"End_time":   payload.End_time,
+	}
+
+	count, err := col.CountDocuments(context.Background(), filter)
+	if err != nil {
+		return false
+	}
+
+	return count > 0
 }
 
 func getAvailableTimesCollection() *mongo.Collection {
