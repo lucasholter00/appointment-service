@@ -56,7 +56,7 @@ In this service the following people have contributed:
 - Lucas Holter (issues: #1, #2, #5 Merge request: !2)
 - Cornelia Olofsson Larsson (Issues: #3, #4, #6)
 - James Klouda (Merge request: !1)
-- Jonatan Boman (Merge request: !4)
+- Jonatan Boman (Merge request: !4, !6)
 - Mohamad Khalil (Merge request: !3)
 - Joel Mattson (Merge request: !5)
 
