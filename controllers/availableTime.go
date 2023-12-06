@@ -18,14 +18,16 @@ func InitializeAvailableTimes(client mqtt.Client) {
 
 	tokenCreate := client.Subscribe("grp20/dentist/post", byte(0), func(c mqtt.Client, m mqtt.Message) {
 		var payload schemas.AvailableTime
+        var returnData Res
 
-		err := json.Unmarshal(m.Payload(), &payload)
-		if err != nil {
-			var message string
-			message = "{\"message\": \"Bad request\",\"code\": \"400\"}"
-			client.Publish("grp20/res/availabletime/create", 0, false, message)
+		err1 := json.Unmarshal(m.Payload(), &payload)
+		err2 := json.Unmarshal(m.Payload(), &returnData)
+		if (err1 != nil) && (err2 != nil) {
+            returnData.Message = "Bad Request"
+            returnData.Status = 400
+            PublishReturnMessage(returnData, "grp20/res/availabletime/create", client)
 		} else {
-			go CreateAvailableTime(payload, client, false)
+			go CreateAvailableTime(payload, returnData, client, false)
 		}
 	})
 
@@ -35,12 +37,16 @@ func InitializeAvailableTimes(client mqtt.Client) {
 
 	tokenGet := client.Subscribe("grp20/req/timeSlots/get", byte(0), func(c mqtt.Client, m mqtt.Message) {
 		var payload schemas.AvailableTime
-		err := json.Unmarshal(m.Payload(), &payload)
-		if err != nil {
-			message := "{\"Message\": \"Bad request\",\"Code\": \"400\"}"
-			client.Publish("grp20/res/timeslots/get", 0, false, message)
+        var returnData Res
+
+		err1 := json.Unmarshal(m.Payload(), &payload)
+		err2 := json.Unmarshal(m.Payload(), &returnData)
+		if (err1 != nil) && (err2 != nil) {
+            returnData.Message = "Bad request"
+            returnData.Status = 400
+            PublishReturnMessage(returnData, "grp20/res/timeslots/get", client)
 		} else {
-			go GetAllAvailableTimesWithDentistID(payload.Dentist_id, client)
+			go GetAllAvailableTimesWithDentistID(payload.Dentist_id, returnData, client)
 		}
 	})
 
@@ -49,19 +55,17 @@ func InitializeAvailableTimes(client mqtt.Client) {
 	}
 
 	tokenDelete := client.Subscribe("grp20/req/dentist/delete", byte(0), func(c mqtt.Client, m mqtt.Message) {
-
 		var payload schemas.AvailableTime
-		err := json.Unmarshal(m.Payload(), &payload)
-		if err != nil {
-			message := "{\"Message\": \"Bad request\",\"Code\": \"400\"}"
-			client.Publish("grp20/res/dentist/delete", 0, false, message)
+        var returnData Res
+
+		err1 := json.Unmarshal(m.Payload(), &payload)
+		err2 := json.Unmarshal(m.Payload(), &returnData)
+		if (err1 != nil) && (err2 != nil) {
+            returnData.Message = "Bad request"
+            returnData.Status = 400
+            PublishReturnMessage(returnData, "grp20/res/dentist/delete", client)
 		} else {
-			if !exist(payload) {
-				message := "{\"Message\": \"Not found!\",\"Code\": \"404\"}"
-				client.Publish("grp20/res/dentist/delete", 0, false, message)
-			} else {
-				go DeleteAvailableTime(payload.ID, client)
-			}
+		    go DeleteAvailableTime(payload.ID, returnData, client)
 		}
 	})
 
@@ -71,12 +75,14 @@ func InitializeAvailableTimes(client mqtt.Client) {
 
 	tokenInternalMigrate := client.Subscribe("appointmentservice/internal/migrate", byte(0), func(c mqtt.Client, m mqtt.Message) {
 		var payload schemas.AvailableTime
+        var returnData Res
 
-		err := json.Unmarshal(m.Payload(), &payload)
-		if err != nil {
+		err1 := json.Unmarshal(m.Payload(), &payload)
+		err2 := json.Unmarshal(m.Payload(), &returnData)
+		if (err1 != nil) && (err2 != nil){
 			fmt.Printf("malformed payload!")
 		} else {
-			go CreateAvailableTime(payload, client, true)
+			go CreateAvailableTime(payload, returnData, client, true)
 		}
 	})
 
@@ -86,19 +92,19 @@ func InitializeAvailableTimes(client mqtt.Client) {
 
 }
 
-func CreateAvailableTime(payload schemas.AvailableTime, client mqtt.Client, internal bool) bool {
-	var message string
+func CreateAvailableTime(payload schemas.AvailableTime, returnData Res, client mqtt.Client, internal bool) bool {
 
 	if exist(payload) {
-		var message string
-		message = "{\"Message\": \"An identical available time already exist!\",\"Code\": \"409\"}"
-		client.Publish("grp20/res/availabletime/create", 0, false, message)
+        returnData.Message = "An identical available time already exist!"
+        returnData.Status = 409
+        PublishReturnMessage(returnData, "grp20/res/availabletime/create", client)
 		return false
 	}
 
 	if payload.Start_time > payload.End_time {
-		message = "{\"Message\": \"End time must be after the start time\",\"Code\": \"409\"}"
-		client.Publish("grp20/res/availabletime/create", 0, false, message)
+        returnData.Message = "End time must be after the start time"
+        returnData.Status = 409
+        PublishReturnMessage(returnData, "grp20/res/availabletime/create", client)
 		return false
 	}
 
@@ -109,35 +115,45 @@ func CreateAvailableTime(payload schemas.AvailableTime, client mqtt.Client, inte
 	if internal == false {
 		if err != nil {
 			log.Fatal(err)
-			message = "{\"Message\": \"An error occurred\",\"Code\": \"500\"}"
-			client.Publish("grp20/res/availabletime/create", 0, false, message)
+
+            returnData.Message = "An error occurred"
+            returnData.Status = 500
+            PublishReturnMessage(returnData, "grp20/res/availabletime/create", client)
+
 			return false
 		}
 
-		message = "{\"Message\": \"Available time created\",\"Code\": \"201\"}"
 		fmt.Printf("Registered availableTime with dentistID: %v \n", result.InsertedID)
-		client.Publish("grp20/res/availabletime/create", 0, false, message)
+
+        returnData.Message = "Available time created"
+        returnData.Status = 201
+        PublishReturnMessage(returnData, "grp20/res/availabletime/create", client)
+
 		return true
 	} else {
 		if err != nil {
+            //Data not migrated successfully
 			return false
 		} else {
-			client.Publish("internal/res", 0, false, "data migrated!")
+            //Data migrated successfully
 			return true
 		}
 	}
 }
 
 // getAllInstancesWithDentistID retrieves all documents in a collection with a matching dentist_id
-func GetAllAvailableTimesWithDentistID(dentistID primitive.ObjectID, client mqtt.Client) bool {
+func GetAllAvailableTimesWithDentistID(dentistID primitive.ObjectID, returnData Res, client mqtt.Client) bool {
 
 	col := getAvailableTimesCollection()
 	filter := bson.D{{Key: "dentist_id", Value: dentistID}}
 
 	cursor, err := col.Find(context.TODO(), filter)
 	if err != nil {
-		message := "{\"Message\": \"An error occurred\",\"Code\": \"500\"}"
-		client.Publish("grp20/res/timeslots/get", 0, false, message)
+
+        returnData.Message = "An error occurred"
+        returnData.Status = 500
+        PublishReturnMessage(returnData, "grp20/res/timeslots/get", client)
+
 		return false
 	}
 
@@ -148,36 +164,35 @@ func GetAllAvailableTimesWithDentistID(dentistID primitive.ObjectID, client mqtt
 	for cursor.Next(context.TODO()) {
 		var availableTime schemas.AvailableTime
 		if err := cursor.Decode(&availableTime); err != nil {
-			message := "{\"Message\": \"An error occurred while decoding results\",\"Code\": \"500\"}"
-			client.Publish("grp20/res/timeslots/get", 0, false, message)
+
+            returnData.Message = "An error occurred while decoding results"
+            returnData.Status = 500
+            PublishReturnMessage(returnData, "grp20/res/timeslots/get", client)
+
 			return false
 		}
 		availableTimes = append(availableTimes, availableTime)
 	}
 
 	if err := cursor.Err(); err != nil {
-		message := "{\"Message\": \"An error occurred\",\"Code\": \"500\"}"
-		client.Publish("grp20/res/timeslots/get", 0, false, message)
+
+        returnData.Message = "An error occurred"
+        returnData.Status = 500
+        PublishReturnMessage(returnData, "grp20/res/timeslots/get", client)
+
 		return false
 	}
 
 	// Convert the responseMap to JSON
-	resultJSON, err := json.Marshal(availableTimes)
+    returnData.AvailableTimes = &availableTimes
 
-	if err != nil {
-		message := "{\"Message\": \"An error occurred while converting to JSON\",\"Code\": \"500\"}"
-		client.Publish("grp20/res/timeslots/get", 0, false, message)
-		return false
-	}
-
-	fmt.Printf(string(resultJSON))
-	client.Publish("grp20/res/timeslots/get", 0, false, string(resultJSON))
+    PublishReturnMessage(returnData, "grp20/res/timeslots/get", client)
 
 	return true
 }
 
 // deletes an availableTime entirely, will be performed by dentists
-func DeleteAvailableTime(ID primitive.ObjectID, client mqtt.Client) bool {
+func DeleteAvailableTime(ID primitive.ObjectID, returnData Res, client mqtt.Client) bool {
 
 	col := getAvailableTimesCollection()
 	filter := bson.M{"_id": ID}
@@ -197,8 +212,11 @@ func DeleteAvailableTime(ID primitive.ObjectID, client mqtt.Client) bool {
 		document, err := json.Marshal(msg)
 
 		if err != nil {
-			message := "{\"Message\": \"Internal server error!\",\"Code\": \"500\"}"
-			client.Publish("grp20/res/dentist/delete", 0, false, message)
+
+            returnData.Message = "Internal server error!"
+            returnData.Status = 500
+            PublishReturnMessage(returnData, "grp20/res/dentist/delete", client)
+
 			return false
 		}
 
@@ -207,8 +225,10 @@ func DeleteAvailableTime(ID primitive.ObjectID, client mqtt.Client) bool {
 		return false
 	} else {
 		fmt.Printf("Deleted Time id: %v \n", ID)
-		message := "{\"Message\": \"Available time deleted!\",\"Code\": \"200\"}"
-		client.Publish("grp20/res/dentist/delete", 0, false, message)
+        
+        returnData.Message = "Available time deleted!"
+        returnData.Status = 200
+        PublishReturnMessage(returnData, "grp20/res/dentist/delete", client)
 
 		return true
 
