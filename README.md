@@ -58,6 +58,7 @@ In this service the following people have contributed:
 - James Klouda (Merge request: !1)
 - Jonatan Boman (Merge request: !4)
 - Mohamad Khalil (Merge request: !3)
+- Joel Mattson (Merge request: !5)
 
 
 
