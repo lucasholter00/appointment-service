@@ -155,10 +155,14 @@ func GetAllForUser(id primitive.ObjectID, client mqtt.Client) bool {
 func CreateAppointment(payload schemas.Appointment, client mqtt.Client) bool {
 	var message string
 	var code string
-	var returnVal bool
 
 	if exist(payload) {
 		//send conflict - http status code
+		return false
+	}
+
+	if payload.Start_time > payload.End_time {
+		//send mqtt message, not valid format for start and end, should be start<end
 		return false
 	}
 
@@ -171,17 +175,16 @@ func CreateAppointment(payload schemas.Appointment, client mqtt.Client) bool {
 		code = "500"
 		message = `{"message": "Appointmend could not be created"`
 		client.Publish("grp20/res/appointment/create", 0, false, message)
-		panic(err)
+		return false
 	}
 
 	message = `{"message": "Appointment booked"`
 	code = "200"
-	returnVal = true
 
 	message = AddCodeStringJson(message, code)
 
 	client.Publish("grp20/res/appointment/create", 0, false, message)
-	return returnVal
+	return true
 }
 
 func CancelAppointment(id primitive.ObjectID, client mqtt.Client) bool {
@@ -250,14 +253,15 @@ func exist(payload schemas.Appointment) bool {
 	col := getAppointmentCollection()
 
 	filter := bson.M{
-		"Dentist_id": payload.Dentist_id,
-		"Start_time": payload.Start_time,
-		"End_time":   payload.End_time,
+		"dentist_id": payload.Dentist_id,
+		"patient_id": payload.Patient_id,
+		"start_time": payload.Start_time,
+		"end_time":   payload.End_time,
 	}
 
 	count, err := col.CountDocuments(context.Background(), filter)
 	if err != nil {
-		return false
+		return true
 	}
 
 	return count > 0
