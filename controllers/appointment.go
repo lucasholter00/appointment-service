@@ -37,7 +37,6 @@ func InitialiseAppointment(client mqtt.Client) {
 
 	tokenCreate := client.Subscribe("grp20/req/appointment/create", byte(0), func(c mqtt.Client, m mqtt.Message) {
 
-        fmt.Printf("Här")
 		var payload schemas.Appointment
         var returnData Res
 		err1 := json.Unmarshal(m.Payload(), &payload)
@@ -228,7 +227,6 @@ func CancelAppointment(id primitive.ObjectID, returnData Res, client mqtt.Client
 
         message := string(jsonData)
 
-		fmt.Printf("Här")
 		client.Publish("appointmentservice/internal/migrate", 0, false, message)
 
         returnData.Message = "Appointment Canceled"
