@@ -35,7 +35,7 @@ func InitializeAvailableTimes(client mqtt.Client) {
 		panic(tokenCreate.Error())
 	}
 
-	tokenGet := client.Subscribe("grp20/req/timeSlots/get", byte(0), func(c mqtt.Client, m mqtt.Message) {
+	tokenGet := client.Subscribe("grp20/req/availabletimes/get", byte(0), func(c mqtt.Client, m mqtt.Message) {
 		var payload schemas.AvailableTime
         var returnData Res
 
@@ -44,7 +44,7 @@ func InitializeAvailableTimes(client mqtt.Client) {
 		if (err1 != nil) && (err2 != nil) {
             returnData.Message = "Bad request"
             returnData.Status = 400
-            PublishReturnMessage(returnData, "grp20/res/timeslots/get", client)
+            PublishReturnMessage(returnData, "grp20/res/availabletimes/get", client)
 		} else {
 			go GetAllAvailableTimesWithDentistID(payload.Dentist_id, returnData, client)
 		}
@@ -152,7 +152,7 @@ func GetAllAvailableTimesWithDentistID(dentistID primitive.ObjectID, returnData 
 
         returnData.Message = "An error occurred"
         returnData.Status = 500
-        PublishReturnMessage(returnData, "grp20/res/timeslots/get", client)
+        PublishReturnMessage(returnData, "grp20/res/availabletimes/get", client)
 
 		return false
 	}
@@ -167,7 +167,7 @@ func GetAllAvailableTimesWithDentistID(dentistID primitive.ObjectID, returnData 
 
             returnData.Message = "An error occurred while decoding results"
             returnData.Status = 500
-            PublishReturnMessage(returnData, "grp20/res/timeslots/get", client)
+            PublishReturnMessage(returnData, "grp20/res/availabletimes/get", client)
 
 			return false
 		}
@@ -178,7 +178,7 @@ func GetAllAvailableTimesWithDentistID(dentistID primitive.ObjectID, returnData 
 
         returnData.Message = "An error occurred"
         returnData.Status = 500
-        PublishReturnMessage(returnData, "grp20/res/timeslots/get", client)
+        PublishReturnMessage(returnData, "grp20/res/availabletimes/get", client)
 
 		return false
 	}
@@ -186,7 +186,7 @@ func GetAllAvailableTimesWithDentistID(dentistID primitive.ObjectID, returnData 
 	// Convert the responseMap to JSON
     returnData.AvailableTimes = &availableTimes
 
-    PublishReturnMessage(returnData, "grp20/res/timeslots/get", client)
+    PublishReturnMessage(returnData, "grp20/res/availabletimes/get", client)
 
 	return true
 }
