@@ -52,7 +52,7 @@ func InitialiseAppointment(client mqtt.Client) {
 		panic(tokenCreate.Error())
 	}
 
-	tokenGetAllForUser := client.Subscribe("grp20/req/appointment/get", byte(0), func(c mqtt.Client, m mqtt.Message) {
+	tokenGetAllForUser := client.Subscribe("grp20/req/timeslots/get", byte(0), func(c mqtt.Client, m mqtt.Message) {
 
 		var payload schemas.Appointment
 		var returnData Res
@@ -62,7 +62,7 @@ func InitialiseAppointment(client mqtt.Client) {
 			//send mqtt message 400 bad request
 			fmt.Printf("400 - Bad request")
 		} else {
-			go GetAllForUser(payload.Patient_id, returnData, client)
+            go GetAllForUser(payload, returnData, client)
 		}
 	})
 	if tokenGetAllForUser.Error() != nil {
@@ -115,12 +115,21 @@ func DeleteAppointment(id primitive.ObjectID, returnData Res, client mqtt.Client
 	return returnVal
 }
 
-func GetAllForUser(id primitive.ObjectID, returnData Res,client mqtt.Client) bool {
+func GetAllForUser(payload schemas.Appointment, returnData Res,client mqtt.Client) bool {
 
 	var returnVal bool
+    var filter bson.M
+	var timeslots []schemas.Appointment
+
+    var zeroID primitive.ObjectID
+
+    if payload.Dentist_id != zeroID {
+        filter = bson.M{"dentist_id": payload.Dentist_id}
+    } else if payload.Patient_id != zeroID {
+        filter = bson.M{"patient_id": payload.Patient_id}
+    }
 
 	col := getAppointmentCollection()
-	filter := bson.M{"patient_id": id}
 
 	cursor, err := col.Find(context.TODO(), filter)
 
@@ -131,7 +140,6 @@ func GetAllForUser(id primitive.ObjectID, returnData Res,client mqtt.Client) boo
 
 	defer cursor.Close(context.TODO())
 
-	var appointments []schemas.Appointment
 
 	for cursor.Next(context.TODO()) {
 		var appointment schemas.Appointment
@@ -142,12 +150,12 @@ func GetAllForUser(id primitive.ObjectID, returnData Res,client mqtt.Client) boo
 			panic(err)
 		}
 
-		appointments = append(appointments, appointment)
+		timeslots = append(timeslots, appointment)
 	}
 	returnVal = true
 
     returnData.Status = 200
-    returnData.Appointments = &appointments
+    returnData.Appointments = &timeslots
 
     PublishReturnMessage(returnData, "grp20/res/appointment/get", client)
 
