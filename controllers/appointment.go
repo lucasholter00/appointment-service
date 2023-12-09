@@ -149,15 +149,43 @@ func GetAllForUser(payload schemas.Appointment, returnData Res,client mqtt.Clien
             returnData.Status = 500
 			panic(err)
 		}
+        
 
 		timeslots = append(timeslots, appointment)
 	}
+    
+
+    col = getAvailableTimesCollection()
+
+	cursor, err = col.Find(context.TODO(), filter)
+
+	if err != nil {
+        returnData.Message = "Error"
+        returnData.Status = 500
+	}
+
+	defer cursor.Close(context.TODO())
+
+
+	for cursor.Next(context.TODO()) {
+		var availableTimes schemas.Appointment
+
+		if err := cursor.Decode(&availableTimes); err != nil {
+            returnData.Message = "Error"
+            returnData.Status = 500
+			panic(err)
+		}
+        
+
+		timeslots = append(timeslots, availableTimes)
+	}
+
 	returnVal = true
 
     returnData.Status = 200
     returnData.Appointments = &timeslots
 
-    PublishReturnMessage(returnData, "grp20/res/appointment/get", client)
+    PublishReturnMessage(returnData, "grp20/res/timeslots/get", client)
 
 
 	return returnVal
