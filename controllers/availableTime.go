@@ -144,8 +144,6 @@ func BookAvailableTime(payload schemas.Appointment, returnData Res, client mqtt.
         return err == nil 
     }
     return true
-
-    //TODO check if creation was successfull, else reinsert into availabletimes
 }
 
 func CreateAvailableTime(payload schemas.AvailableTime, returnData Res, client mqtt.Client, internal bool) bool {
