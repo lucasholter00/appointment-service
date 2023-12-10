@@ -117,7 +117,6 @@ func DeleteAppointment(id primitive.ObjectID, returnData Res, client mqtt.Client
 
 func GetAllForUser(payload schemas.Appointment, returnData Res,client mqtt.Client) bool {
 
-	var returnVal bool
     var filter bson.M
 	var timeslots []schemas.Appointment
 
@@ -180,15 +179,21 @@ func GetAllForUser(payload schemas.Appointment, returnData Res,client mqtt.Clien
 		timeslots = append(timeslots, availableTimes)
 	}
 
-	returnVal = true
+    if timeslots == nil {
+        returnData.Status = 404
+        returnData.Message = "No timeslots found"
+    } else{
+        returnData.Status = 200
+        returnData.Appointments = &timeslots
+    }
 
-    returnData.Status = 200
-    returnData.Appointments = &timeslots
+
+
 
     PublishReturnMessage(returnData, "grp20/res/timeslots/get", client)
 
 
-	return returnVal
+	return true
 }
 
 func CreateAppointment(payload schemas.Appointment, returnData Res, client mqtt.Client) bool {
