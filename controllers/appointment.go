@@ -126,6 +126,11 @@ func GetAllForUser(payload schemas.Appointment, returnData Res,client mqtt.Clien
         filter = bson.M{"dentist_id": payload.Dentist_id}
     } else if payload.Patient_id != zeroID {
         filter = bson.M{"patient_id": payload.Patient_id}
+    } else {
+        returnData.Message = "Bad request"
+        returnData.Status = 400
+        PublishReturnMessage(returnData, "grp20/res/timeslots/get", client)
+        return false
     }
 
 	col := getAppointmentCollection()
@@ -135,6 +140,8 @@ func GetAllForUser(payload schemas.Appointment, returnData Res,client mqtt.Clien
 	if err != nil {
         returnData.Message = "Error"
         returnData.Status = 500
+        PublishReturnMessage(returnData, "grp20/res/timeslots/get", client)
+        return false
 	}
 
 	defer cursor.Close(context.TODO())
@@ -146,7 +153,8 @@ func GetAllForUser(payload schemas.Appointment, returnData Res,client mqtt.Clien
 		if err := cursor.Decode(&appointment); err != nil {
             returnData.Message = "Error"
             returnData.Status = 500
-			panic(err)
+            PublishReturnMessage(returnData, "grp20/res/timeslots/get", client)
+            return false
 		}
         
 
@@ -161,6 +169,8 @@ func GetAllForUser(payload schemas.Appointment, returnData Res,client mqtt.Clien
 	if err != nil {
         returnData.Message = "Error"
         returnData.Status = 500
+        PublishReturnMessage(returnData, "grp20/res/timeslots/get", client)
+        return false
 	}
 
 	defer cursor.Close(context.TODO())
@@ -172,7 +182,8 @@ func GetAllForUser(payload schemas.Appointment, returnData Res,client mqtt.Clien
 		if err := cursor.Decode(&availableTimes); err != nil {
             returnData.Message = "Error"
             returnData.Status = 500
-			panic(err)
+            PublishReturnMessage(returnData, "grp20/res/timeslots/get", client)
+            return false
 		}
         
 
