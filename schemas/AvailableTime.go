@@ -9,4 +9,5 @@ type AvailableTime struct {
 	Dentist_id primitive.ObjectID `bson:"Dentist_id"`
 	Start_time primitive.DateTime `bson:"Start_time"`
 	End_time   primitive.DateTime `bson:"End_time"`
+    Clinic_id  primitive.ObjectID `bson:"Clinic_id"`
 }
