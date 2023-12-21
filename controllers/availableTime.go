@@ -15,7 +15,6 @@ import (
 )
 
 func InitializeAvailableTimes(client mqtt.Client) {
-
 	tokenCreate := client.Subscribe("grp20/req/availabletimes/create", byte(0), func(c mqtt.Client, m mqtt.Message) {
 		var payload schemas.AvailableTime
 		var returnData Res
@@ -96,7 +95,6 @@ func InitializeAvailableTimes(client mqtt.Client) {
 	if tokenBookAvailableTime.Error() != nil {
 		panic(tokenBookAvailableTime.Error())
 	}
-
 }
 
 func BookAvailableTime(payload schemas.Appointment, returnData Res, client mqtt.Client) bool {
@@ -132,11 +130,16 @@ func BookAvailableTime(payload schemas.Appointment, returnData Res, client mqtt.
 		_ = result
 		return err == nil
 	}
+
+	clientUpdate := deletedTime
+	var clientReturn Res
+	clientReturn.AvailableTime = &clientUpdate
+
+	PublishReturnMessage(clientReturn, "grp20/availabletimes/book/live", client)
 	return true
 }
 
 func CreateAvailableTime(payload schemas.AvailableTime, returnData Res, client mqtt.Client, internal bool) bool {
-
 	if exist(payload) {
 		returnData.Message = "An identical available time already exist!"
 		returnData.Status = 409
@@ -185,10 +188,10 @@ func CreateAvailableTime(payload schemas.AvailableTime, returnData Res, client m
 		return true
 	} else {
 		if err != nil {
-			//Data not migrated successfully
+			// Data not migrated successfully
 			return false
 		} else {
-			//Data migrated successfully, will get triggered when an patient cancels an appointment in appointment.go
+			// Data migrated successfully, will get triggered when an patient cancels an appointment in appointment.go
 			returnData.Message = "An appointment has been canceled"
 			returnData.Status = 201
 			PublishReturnMessage(returnData, "grp20/res/appointment/delete", client)
@@ -200,7 +203,6 @@ func CreateAvailableTime(payload schemas.AvailableTime, returnData Res, client m
 
 // getAllInstancesWithDentistID retrieves all documents in a collection with a matching dentist_id
 func GetAllAvailableTimes(payload schemas.AvailableTime, returnData Res, client mqtt.Client) bool {
-
 	var filter bson.D
 	col := getAvailableTimesCollection()
 
@@ -316,12 +318,10 @@ func GetClinicsAvailabletimes(payload DentistArray, returnData Res, client mqtt.
 
 // deletes an availableTime entirely, will be performed by dentists
 func DeleteAvailableTime(ID primitive.ObjectID, returnData Res, client mqtt.Client) bool {
-
 	col := getAvailableTimesCollection()
 	fmt.Print(ID.Hex())
 	filter := bson.M{"_id": ID}
 	result, err := col.DeleteOne(context.TODO(), filter)
-
 	if err != nil {
 		log.Fatal(err)
 		return false
@@ -337,7 +337,7 @@ func DeleteAvailableTime(ID primitive.ObjectID, returnData Res, client mqtt.Clie
 
 			return false
 		}
-		//if no availabletime is found for _id, check in appointments collection
+		// if no availabletime is found for _id, check in appointments collection
 		DeleteAppointment(ID, returnData, client)
 
 		return false
