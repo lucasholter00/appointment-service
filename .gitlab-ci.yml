@@ -37,8 +37,8 @@ build-docker-image:
   image: docker:latest
   tags: 
     - docker-build
-  only:
-    - main
+#  only:
+#    - main
   services:
     - docker:dind
   variables:  # not strictly needed, depending on runner configuration
@@ -67,8 +67,8 @@ deploy:
   stage: deploy
   tags:
     - docker
-  only:
-    - main
+#  only:
+#    - main
   image:
     name: mcr.microsoft.com/azure-cli
     entrypoint: [""]
