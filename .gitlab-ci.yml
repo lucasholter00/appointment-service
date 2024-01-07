@@ -45,7 +45,7 @@ build-docker-image:
     DOCKER_HOST: "tcp://docker:2375"
     DOCKER_TLS_CERTDIR: ""
 
-    IMAGE_NAME: "appointment-service:x86"
+    IMAGE_NAME: "user-service:x86"
     AZURE_REGISTRY_USERNAME: $CI_REGISTRY_USER
     AZURE_REGISTRY_PASSWORD: $CI_REGISTRY_PASSWORD
     AZURE_REGISTRY: dentanoidregistry.azurecr.io
@@ -74,5 +74,5 @@ deploy:
     entrypoint: [""]
   script:
     - az login --service-principal -u "$AZURE_CLIENT_ID" -p "$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"
-    - az container delete --name user-service --resource-group Dentanoid --yes
-    - az container create --resource-group Dentanoid --name user-service --image dentanoidRegistry.azurecr.io/services/appointment:latest --registry-username "$CI_REGISTRY_USER" --registry-password "$CI_REGISTRY_PASSWORD" --restart-policy Always
+    - az container delete --name appointment-service --resource-group Dentanoid --yes
+    - az container create --resource-group Dentanoid --name appointment-service --image dentanoidRegistry.azurecr.io/services/appointment:latest --registry-username "$CI_REGISTRY_USER" --registry-password "$CI_REGISTRY_PASSWORD" --restart-policy Always
