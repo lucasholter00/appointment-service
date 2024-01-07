@@ -45,7 +45,7 @@ build-docker-image:
     DOCKER_HOST: "tcp://docker:2375"
     DOCKER_TLS_CERTDIR: ""
 
-    IMAGE_NAME: "user-service:x86"
+    IMAGE_NAME: "appointment-service:x86"
     AZURE_REGISTRY_USERNAME: $CI_REGISTRY_USER
     AZURE_REGISTRY_PASSWORD: $CI_REGISTRY_PASSWORD
     AZURE_REGISTRY: dentanoidregistry.azurecr.io
