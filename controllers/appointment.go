@@ -72,7 +72,6 @@ func InitialiseAppointment(client mqtt.Client) {
 
 func DeleteAppointment(id primitive.ObjectID, returnData Res, client mqtt.Client) bool {
 	var returnVal bool
-
 	col := getAppointmentCollection()
 	filter := bson.M{"_id": id}
 	result, err := col.DeleteOne(context.TODO(), filter)
@@ -218,6 +217,8 @@ func CreateAppointment(payload schemas.Appointment, returnData Res, client mqtt.
 func CancelAppointment(id primitive.ObjectID, returnData Res, client mqtt.Client) bool {
 	appointment := &schemas.Appointment{}
 
+	var zeroID primitive.ObjectID
+
 	col := getAppointmentCollection()
 	filter := bson.M{"_id": id}
 	data := col.FindOne(context.TODO(), filter)
@@ -244,17 +245,19 @@ func CancelAppointment(id primitive.ObjectID, returnData Res, client mqtt.Client
 		data.Decode(appointment)
 
 		availableTime := schemas.AvailableTime{
+			ID:         appointment.ID,
 			Dentist_id: appointment.Dentist_id,
 			Start_time: appointment.Start_time,
 			End_time:   appointment.End_time,
 			Clinic_id:  appointment.Clinic_id,
 		}
-
-		if err != nil {
-			panic(err)
-		}
-
 		CreateAvailableTime(availableTime, returnData, client, true)
+
+		appointment.ID = zeroID
+		returnData.Appointment = appointment
+		PublishReturnMessage(returnData, "grp20/req/booking/cancellation", client)
+		PublishReturnMessage(returnData, "grp20/req/booking/cancellation/"+string(availableTime.Clinic_id.Hex()), client)
+
 		return true
 	} else {
 
